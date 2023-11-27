@@ -1,0 +1,84 @@
+﻿@using PivotDemoBlazor.Data;
+
+<div class="d-flex align-items-center">
+    <div class="col-2">
+        <span style="font-weight:bolder">@Field.NameField:</span>
+    </div>
+    <div class="col-6">
+        <DxRadioGroup Items="@Options"
+                      Value="@OptionSelected"
+                      ValueChanged="(string option) => OptionChanged(option, Field)"
+                      Layout="RadioGroupLayout.Horizontal"
+                      CssClass="dx-demo-radio-group" />
+    </div>
+    <div class="col-2">
+        @if (IsSummary)
+        {
+            <DxComboBox Data="@Summaries" Value="@Value" ValueChanged="(string e)=>SummaryTypeChanged(e)"></DxComboBox>
+        }
+    </div>
+    <div class="col-2">
+        <DxButton RenderStyle="ButtonRenderStyle.Secondary" 
+        RenderStyleMode="ButtonRenderStyleMode.Text"
+        Text="Deselect" Click="DeselectAction" />
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter] public DataField Field { get; set; }
+    [Parameter] public EventCallback<DataField> EventCallback1 { get; set; }
+    [Parameter] public EventCallback<DataField> DeselectCallback { get; set; }
+    bool IsRow { get; set; }
+    bool IsColumn { get; set; }
+    bool IsSummary { get; set; }
+    IEnumerable<string> Options = new[] { "Row", "Column", "Data" };
+    IEnumerable<string> Summaries = new List<string>() {
+            "Sum",
+            "Min",
+            "Max",
+            "Avg",
+            "Count",
+  };
+
+    string Value { get; set; } = "Sum";
+    string OptionSelected { get; set; }
+    protected override void OnInitialized()
+    {
+        OptionSelected = Field.Area.ToString();
+        IsSummary = Field.SummaryType != 0;
+        if (IsSummary) Value = Field.SummaryType.ToString();
+    }
+    void OptionChanged(string arg, DataField field)
+    {
+        OptionSelected = arg;
+        IsSummary = arg == "Data";
+        Field.Area = (PivotGridFieldArea)Enum.Parse(typeof(PivotGridFieldArea), arg);
+        if(IsSummary)
+            Field.SummaryType = (PivotGridSummaryType)Enum.Parse(typeof(PivotGridSummaryType), Value);
+        EventCallback1.InvokeAsync(Field);
+    }
+    void SummaryTypeChanged(string _value)
+    {
+        Value = _value;
+        Field.SummaryType = (PivotGridSummaryType)Enum.Parse(typeof(PivotGridSummaryType), Value);
+    }
+    void DeselectAction()
+    {
+        OptionSelected = string.Empty;
+        Value = "Sum";
+        IsSummary = false;
+        StateHasChanged();
+        DeselectCallback.InvokeAsync(Field);
+    }
+    string GetLegendCssClass(SizeMode sizeMode)
+    {
+        var result = "dx-demo-radio-group-label";
+        if (sizeMode != SizeMode.Medium)
+            result += sizeMode == SizeMode.Large ? " dx-demo-large" : " dx-demo-small";
+        return result;
+    }
+}
+
